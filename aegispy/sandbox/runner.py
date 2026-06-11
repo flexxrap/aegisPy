@@ -138,7 +138,7 @@ class ScriptRunner:
 
         try:
             process = subprocess.Popen(
-                [str(script_path)],
+                [sys.executable, str(script_path)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=env,
