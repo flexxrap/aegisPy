@@ -138,8 +138,10 @@ class ScriptRunner:
             logger.warning("Could not set memory limit: %s", e)
 
         try:
-            # Use absolute path or which to ensure python is found
-            python_executable = sys.executable if os.path.isabs(sys.executable) else shutil.which("python3") or sys.executable
+            # Try multiple ways to find python executable
+            python_executable = sys.executable if os.path.isabs(sys.executable) else None
+            if not python_executable:
+                python_executable = shutil.which("python3") or shutil.which("python") or sys.executable
             
             process = subprocess.Popen(
                 [python_executable, str(script_path)],

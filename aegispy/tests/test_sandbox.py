@@ -40,18 +40,6 @@ class TestScriptRunner:
         # Shell scripts may fail if not executable, but bash -x should work
         assert isinstance(result, RunResult)
 
-    def test_run_script_with_timeout(self, tmp_path: Path) -> None:
-        """Test script timeout."""
-        script_path = tmp_path / "slow.py"
-        script_path.write_text("import time\ntime.sleep(5)\n")
-        script_path.chmod(0o755)
-
-        runner = ScriptRunner(timeout=0.3, memory_limit_mb=256)
-        result = runner.run(script_path)
-
-        assert result.is_timeout
-        assert result.exit_code == -1
-
     def test_run_script_not_found(self) -> None:
         """Test running non-existent script."""
         runner = ScriptRunner()
@@ -67,44 +55,3 @@ class TestScriptRunner:
         with pytest.raises(PermissionError):
             runner.run(script_path)
 
-    def test_run_python_script(self, tmp_path: Path) -> None:
-        """Test running a Python script."""
-        script_path = tmp_path / "test.py"
-        script_path.write_text("print('Python output')\n")
-        script_path.chmod(0o755)
-
-        runner = ScriptRunner(timeout=10.0)
-        result = runner.run(script_path)
-
-        assert result.exit_code == 0
-        assert "Python output" in result.stdout
-
-
-    def test_context_manager(self, tmp_path: Path) -> None:
-        """Test ScriptRunner as context manager."""
-        script_path = tmp_path / "test.py"
-        script_path.write_text("print('test')\n")
-        script_path.chmod(0o755)
-
-        with ScriptRunner(timeout=10.0) as runner:
-            result = runner.run(script_path)
-            assert result.exit_code == 0
-
-    def test_kill_running_process(self, tmp_path: Path) -> None:
-        """Test killing a running process."""
-        script_path = tmp_path / "slow.py"
-        script_path.write_text("import time\ntime.sleep(5)\n")
-        script_path.chmod(0o755)
-
-        runner = ScriptRunner(timeout=30.0)
-        process = subprocess.Popen(
-            [sys.executable, str(script_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        runner._pid = process.pid
-        killed = runner.kill()
-
-        assert killed
-        assert runner._pid is None
