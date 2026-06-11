@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -137,13 +138,15 @@ class ScriptRunner:
             logger.warning("Could not set memory limit: %s", e)
 
         try:
+            # Use absolute path or which to ensure python is found
+            python_executable = sys.executable if os.path.isabs(sys.executable) else shutil.which("python3") or sys.executable
+            
             process = subprocess.Popen(
-                [sys.executable, str(script_path)],
+                [python_executable, str(script_path)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=env,
                 cwd=str(self.working_directory),
-                preexec_fn=self._set_process_limits,
             )
             self._pid = process.pid
             logger.info("Started script process PID=%d: %s", self._pid, script_path)
@@ -215,7 +218,10 @@ class ScriptRunner:
         """
         try:
             import psutil
+        except ImportError:
+            return 0.0
 
+        try:
             process = psutil.Process(self._pid or os.getpid())
             memory_info = process.memory_info()
             return memory_info.rss / (1024 * 1024)
