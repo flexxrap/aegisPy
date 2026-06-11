@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
-
-import pytest
-import yaml
 
 from aegispy.config import Config, ConfigLoader
 

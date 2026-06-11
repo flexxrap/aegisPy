@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from aegispy.sandbox import ScriptRunner, RunResult
+from aegispy.sandbox import RunResult, ScriptRunner
 
 
 class TestScriptRunner:

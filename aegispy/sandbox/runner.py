@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import logging
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -30,6 +28,7 @@ class RunResult:
         signal_received: Signal that terminated the process (if any)
         is_timeout: Whether execution timed out
     """
+
     exit_code: int
     stdout: str = ""
     stderr: str = ""
@@ -74,7 +73,8 @@ class ScriptRunner:
 
         logger.info(
             "ScriptRunner initialized with timeout=%.1fs, memory_limit=%dMB",
-            timeout, memory_limit_mb
+            timeout,
+            memory_limit_mb,
         )
 
     def run(self, script_path: str | Path) -> RunResult:
@@ -133,7 +133,7 @@ class ScriptRunner:
 
         try:
             resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
-        except (ValueError, resource.error) as e:
+        except (OSError, ValueError) as e:
             logger.warning("Could not set memory limit: %s", e)
 
         try:
@@ -184,7 +184,7 @@ class ScriptRunner:
         finally:
             try:
                 resource.setrlimit(resource.RLIMIT_AS, old_mem_limit)
-            except (ValueError, resource.error):
+            except (OSError, ValueError):
                 pass
 
     def _set_process_limits(self) -> None:
@@ -194,12 +194,12 @@ class ScriptRunner:
         try:
             max_file_size = 100 * 1024 * 1024
             resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_size, max_file_size))
-        except (ValueError, resource.error):
+        except (OSError, ValueError):
             pass
 
         try:
             resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
-        except (ValueError, resource.error):
+        except (OSError, ValueError):
             pass
 
         try:
@@ -215,6 +215,7 @@ class ScriptRunner:
         """
         try:
             import psutil
+
             process = psutil.Process(self._pid or os.getpid())
             memory_info = process.memory_info()
             return memory_info.rss / (1024 * 1024)
@@ -232,6 +233,7 @@ class ScriptRunner:
 
         try:
             import psutil
+
             process = psutil.Process(self._pid)
             process.terminate()
             process.wait(timeout=5)

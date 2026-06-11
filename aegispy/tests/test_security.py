@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from aegispy.core.security import SecurityConfig, DangerousPatternDetector
+from aegispy.core.security import DangerousPatternDetector, SecurityConfig
 
 
 class TestSecurityConfig:
@@ -125,7 +123,10 @@ class TestDangerousPatternDetector:
         assert result2["risk_score"] == 9
 
         # High risk (score >= 15)
-        code3 = "import os\nimport subprocess\nimport pickle\nimport sys\nimport socket\nimport ctypes\n"
+        code3 = (
+            "import os\nimport subprocess\nimport pickle\n"
+            "import sys\nimport socket\nimport ctypes\n"
+        )
         result3 = detector.analyze(code3)
         assert result3["risk_level"] == "high"
         assert result3["risk_score"] == 18
@@ -133,7 +134,12 @@ class TestDangerousPatternDetector:
     def test_complex_code_analysis(self) -> None:
         """Test analysis of complex code."""
         detector = DangerousPatternDetector()
-        code = "import json\nimport math\n\ndef calculate(x, y):\n    return x + y\n\ndef dangerous():\n    eval('malicious code')\n    os.system('rm -rf /')\n\nresult = calculate(1, 2)\nprint(result)\n"
+        code = (
+            "import json\nimport math\n"
+            "\ndef calculate(x, y):\n    return x + y\n"
+            "\ndef dangerous():\n    eval('malicious code')\n    os.system('rm -rf /')\n"
+            "\nresult = calculate(1, 2)\nprint(result)\n"
+        )
         result = detector.analyze(code)
 
         assert result["is_safe"] is False
