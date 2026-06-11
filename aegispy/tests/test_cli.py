@@ -48,7 +48,6 @@ class TestCLI:
         assert result.exit_code == 0
         assert "test" in result.output
 
-    @pytest.mark.skip(reason="Environment-specific issue")
     def test_run_with_timeout_option(self) -> None:
         """Test running with timeout."""
         runner = CliRunner()

@@ -14,7 +14,6 @@ from aegispy.sandbox import RunResult, ScriptRunner
 class TestScriptRunner:
     """Test ScriptRunner class."""
 
-    @pytest.mark.skip(reason="Environment-specific issue")
     def test_run_simple_script(self, tmp_path: Path) -> None:
         """Test running a simple Python script."""
         script_path = tmp_path / "test.py"
@@ -68,7 +67,6 @@ class TestScriptRunner:
         with pytest.raises(PermissionError):
             runner.run(script_path)
 
-    @pytest.mark.skip(reason="Thread creation issues in test environment")
     def test_run_python_script(self, tmp_path: Path) -> None:
         """Test running a Python script."""
         script_path = tmp_path / "test.py"
@@ -81,7 +79,6 @@ class TestScriptRunner:
         assert result.exit_code == 0
         assert "Python output" in result.stdout
 
-    @pytest.mark.skip(reason="Thread creation issues in test environment")
     def test_run_script_with_timeout(self, tmp_path: Path) -> None:
         """Test script timeout."""
         script_path = tmp_path / "slow.py"
@@ -94,7 +91,6 @@ class TestScriptRunner:
         assert result.is_timeout
         assert result.exit_code == -1
 
-    @pytest.mark.skip(reason="Thread creation issues in test environment")
     def test_context_manager(self, tmp_path: Path) -> None:
         """Test ScriptRunner as context manager."""
         script_path = tmp_path / "test.py"
@@ -105,7 +101,6 @@ class TestScriptRunner:
             result = runner.run(script_path)
             assert result.exit_code == 0
 
-    @pytest.mark.skip(reason="Memory allocation issue in test environment")
     def test_kill_running_process(self, tmp_path: Path) -> None:
         """Test killing a running process."""
         script_path = tmp_path / "slow.py"

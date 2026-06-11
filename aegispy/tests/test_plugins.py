@@ -7,7 +7,7 @@ import pytest
 from aegispy.plugins import Plugin, PluginManager, PluginRegistry
 
 
-class TestPlugin(Plugin):
+class _TestPlugin(Plugin):
     """Test plugin implementation."""
     
     def __init__(self) -> None:
@@ -46,7 +46,7 @@ class TestPluginRegistry:
     def test_register_plugin(self) -> None:
         """Test registering a plugin."""
         registry = PluginRegistry()
-        plugin = TestPlugin()
+        plugin = _TestPlugin()
         
         registry.register(plugin)
         
@@ -56,7 +56,7 @@ class TestPluginRegistry:
     def test_unregister_plugin(self) -> None:
         """Test unregistering a plugin."""
         registry = PluginRegistry()
-        plugin = TestPlugin()
+        plugin = _TestPlugin()
         
         registry.register(plugin)
         result = registry.unregister("test_plugin")
@@ -74,8 +74,8 @@ class TestPluginRegistry:
     def test_list_plugins(self) -> None:
         """Test listing plugins."""
         registry = PluginRegistry()
-        plugin1 = TestPlugin()
-        plugin2 = TestPlugin()
+        plugin1 = _TestPlugin()
+        plugin2 = _TestPlugin()
         plugin2._name = "plugin2"
 
         registry.register(plugin1)
@@ -90,7 +90,7 @@ class TestPluginRegistry:
     def test_enable_disable_plugin(self) -> None:
         """Test enabling/disabling plugin."""
         registry = PluginRegistry()
-        plugin = TestPlugin()
+        plugin = _TestPlugin()
         
         registry.register(plugin)
         

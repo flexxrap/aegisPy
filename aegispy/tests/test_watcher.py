@@ -99,7 +99,6 @@ class TestFileWatcher:
         assert watcher._should_ignore(Path("temp/file.txt")) is True
         assert watcher._should_ignore(Path("test.py")) is False
     
-    @pytest.mark.skip(reason="Thread creation issues in test environment")
     def test_context_manager(self) -> None:
         """Test watcher as context manager."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -112,7 +111,6 @@ class TestFileWatcher:
             
             assert not watcher.is_running()
     
-    @pytest.mark.skip(reason="Thread creation issues in test environment")
     def test_callback(self) -> None:
         """Test event callback."""
         events: list[WatchEvent] = []
