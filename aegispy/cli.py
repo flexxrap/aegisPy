@@ -13,6 +13,7 @@ from .core.logging_config import setup_logging
 from .core.security import SecurityConfig
 from .plugins import PluginManager
 from .sandbox import SandboxConfig, SecureSandbox
+from .cli_watch import watch as watch_command
 
 logger = logging.getLogger(__name__)
 
@@ -244,6 +245,12 @@ def plugins() -> None:
         click.echo(f"    Description: {plugin['description']}")
         click.echo(f"    Status: {'Enabled' if plugin['enabled'] else 'Disabled'}")
         click.echo()
+
+
+@main.command()
+def watch() -> None:
+    """Watch files and directories for changes."""
+    watch_command()
 
 
 if __name__ == "__main__":
