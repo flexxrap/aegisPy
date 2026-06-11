@@ -15,8 +15,9 @@ from rich.live import Live
 from rich.layout import Layout
 from rich import box
 
-from .sandbox import SecureSandbox, SandboxConfig
-from .core.security import SecurityConfig, DangerousPatternDetector
+from ..core.logging_config import get_logger
+from ..sandbox import SecureSandbox, SandboxConfig
+from ..core.security import SecurityConfig, DangerousPatternDetector
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ def main() -> None:
                 
         except KeyboardInterrupt:
             console.print("\n[yellow]Interrupted by user[/yellow]")
+            break
+        except EOFError:
+            console.print("\n[yellow]Session ended[/yellow]")
             break
         except Exception as e:
             console.print(f"[red]Error: {e}[/red]")

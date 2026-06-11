@@ -1,5 +1,13 @@
 # AegisPy
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Version](https://img.shields.io/pypi/v/aegispy.svg)](https://pypi.org/project/aegispy/)
+[![Python Version](https://img.shields.io/pypi/pyversions/aegispy.svg)](https://pypi.org/project/aegispy/)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/flexxrap/aegisPy/ci.yml?branch=main)](https://github.com/flexxrap/aegisPy/actions)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/flexxrap/raw/aegispy-tests.json)](https://github.com/flexxrap/aegisPy/actions)
+[![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Downloads](https://static.pepy.tech/badge/aegispy)](https://pepy.tech/project/aegispy)
+
 Advanced local security sandbox with TUI for safe code execution and analysis.
 
 ## Features
@@ -53,4 +61,4 @@ aegispy analyze suspicious_script.py
 
 ## License
 
-MIT
+GPL v3
