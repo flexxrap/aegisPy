@@ -8,11 +8,15 @@ from pathlib import Path
 
 import click
 
+from .config import Config, ConfigLoader
 from .core.logging_config import setup_logging
 from .sandbox import SecureSandbox, SandboxConfig
 from .core.security import SecurityConfig
 
 logger = logging.getLogger(__name__)
+
+# Global config storage
+_ctx_config: Config | None = None
 
 
 @click.group()
@@ -27,8 +31,16 @@ logger = logging.getLogger(__name__)
     type=click.Path(),
     help="Path to log file"
 )
-def main(verbose: int, log_file: str | None) -> None:
+@click.option(
+    "--config", "-c",
+    type=click.Path(),
+    help="Path to configuration file"
+)
+@click.pass_context
+def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | None) -> None:
     """AegisPy - Secure code sandbox with TUI."""
+    global _ctx_config
+    
     level = logging.WARNING
     if verbose == 1:
         level = logging.INFO
@@ -37,7 +49,18 @@ def main(verbose: int, log_file: str | None) -> None:
     
     log_path = Path(log_file) if log_file else None
     setup_logging(level, log_path)
+    
+    # Load configuration
+    if config:
+        loader = ConfigLoader(Path(config))
+        _ctx_config = loader.load()
+        logger.info("Loaded configuration from: %s", config)
+    else:
+        loader = ConfigLoader()
+        _ctx_config = loader.load()
+    
     logger.info("AegisPy started with verbosity=%d", verbose)
+    ctx.obj = _ctx_config
 
 
 @main.command()
@@ -50,25 +73,29 @@ def main(verbose: int, log_file: str | None) -> None:
 @click.option(
     "--memory", "-m",
     type=int,
-    default=512,
-    help="Maximum memory in MB (default: 512)"
+    default=None,
+    help="Maximum memory in MB (default: from config)"
 )
 @click.option(
     "--timeout", "-t",
     type=float,
-    default=30.0,
-    help="Execution timeout in seconds (default: 30)"
+    default=None,
+    help="Execution timeout in seconds (default: from config)"
 )
 @click.option(
     "--no-security-check",
     is_flag=True,
     help="Disable security analysis (NOT RECOMMENDED)"
 )
-def run(code: str | None, file: str | None, memory: int, timeout: float, no_security_check: bool) -> None:
+@click.pass_context
+def run(ctx: click.Context, code: str | None, file: str | None, memory: int | None, timeout: float | None, no_security_check: bool) -> None:
     """Execute Python code in secure sandbox.
     
     Either provide code as argument or use --file to specify a Python file.
     """
+    global _ctx_config
+    cfg = ctx.obj or _ctx_config or Config()
+    
     if not code and not file:
         click.echo("Error: Provide code or use --file option", err=True)
         sys.exit(1)
@@ -81,10 +108,14 @@ def run(code: str | None, file: str | None, memory: int, timeout: float, no_secu
             sys.exit(1)
     
     try:
-        security_config = SecurityConfig(max_memory_mb=memory)
+        # Use config values or command line overrides
+        mem = memory if memory is not None else cfg.sandbox.security_config.max_memory_mb
+        tout = timeout if timeout is not None else cfg.sandbox.timeout
+        
+        security_config = SecurityConfig(max_memory_mb=mem)
         sandbox_config = SandboxConfig(
             security_config=security_config,
-            timeout=timeout,
+            timeout=tout,
         )
         
         sandbox = SecureSandbox(sandbox_config)
