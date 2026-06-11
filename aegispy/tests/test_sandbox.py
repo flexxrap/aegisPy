@@ -43,10 +43,10 @@ class TestScriptRunner:
     def test_run_script_with_timeout(self, tmp_path: Path) -> None:
         """Test script timeout."""
         script_path = tmp_path / "slow.py"
-        script_path.write_text("import time\ntime.sleep(10)\n")
+        script_path.write_text("import time\ntime.sleep(5)\n")
         script_path.chmod(0o755)
 
-        runner = ScriptRunner(timeout=0.5, memory_limit_mb=256)
+        runner = ScriptRunner(timeout=0.3, memory_limit_mb=256)
         result = runner.run(script_path)
 
         assert result.is_timeout
@@ -79,17 +79,6 @@ class TestScriptRunner:
         assert result.exit_code == 0
         assert "Python output" in result.stdout
 
-    def test_run_script_with_timeout(self, tmp_path: Path) -> None:
-        """Test script timeout."""
-        script_path = tmp_path / "slow.py"
-        script_path.write_text("import time\ntime.sleep(10)\n")
-        script_path.chmod(0o755)
-
-        runner = ScriptRunner(timeout=0.5, memory_limit_mb=256)
-        result = runner.run(script_path)
-
-        assert result.is_timeout
-        assert result.exit_code == -1
 
     def test_context_manager(self, tmp_path: Path) -> None:
         """Test ScriptRunner as context manager."""
@@ -104,7 +93,7 @@ class TestScriptRunner:
     def test_kill_running_process(self, tmp_path: Path) -> None:
         """Test killing a running process."""
         script_path = tmp_path / "slow.py"
-        script_path.write_text("import time\ntime.sleep(10)\n")
+        script_path.write_text("import time\ntime.sleep(5)\n")
         script_path.chmod(0o755)
 
         runner = ScriptRunner(timeout=30.0)
