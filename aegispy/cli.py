@@ -14,6 +14,7 @@ from .core.security import SecurityConfig
 from .plugins import PluginManager
 from .sandbox import SandboxConfig, SecureSandbox
 from .cli_watch import watch as watch_command
+from .cli_report import report as report_command
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +252,12 @@ def plugins() -> None:
 def watch() -> None:
     """Watch files and directories for changes."""
     watch_command()
+
+
+@main.command()
+def report() -> None:
+    """Generate execution reports in various formats."""
+    report_command()
 
 
 if __name__ == "__main__":
