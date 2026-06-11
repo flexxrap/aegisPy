@@ -11,12 +11,14 @@ import click
 from .config import Config, ConfigLoader
 from .core.logging_config import setup_logging
 from .core.security import SecurityConfig
+from .plugins import PluginManager
 from .sandbox import SandboxConfig, SecureSandbox
 
 logger = logging.getLogger(__name__)
 
 # Global config storage
 _ctx_config: Config | None = None
+_plugin_manager: PluginManager | None = None
 
 
 @click.group()
@@ -24,10 +26,11 @@ _ctx_config: Config | None = None
 @click.option("--verbose", "-v", count=True, help="Increase verbosity (can be used multiple times)")
 @click.option("--log-file", type=click.Path(), help="Path to log file")
 @click.option("--config", "-c", type=click.Path(), help="Path to configuration file")
+@click.option("--plugins-dir", "-p", type=click.Path(), help="Directory containing plugins")
 @click.pass_context
-def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | None) -> None:
+def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | None, plugins_dir: str | None) -> None:
     """AegisPy - Secure code sandbox with TUI."""
-    global _ctx_config
+    global _ctx_config, _plugin_manager
 
     level = logging.WARNING
     if verbose == 1:
@@ -46,6 +49,15 @@ def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | N
     else:
         loader = ConfigLoader()
         _ctx_config = loader.load()
+
+    # Initialize plugin manager
+    _plugin_manager = PluginManager()
+    if plugins_dir:
+        _plugin_manager.registry.add_load_path(Path(plugins_dir))
+    
+    # Load plugins
+    loaded = _plugin_manager.load_plugins()
+    logger.info("Loaded %d plugins", loaded)
 
     logger.info("AegisPy started with verbosity=%d", verbose)
     ctx.obj = _ctx_config
@@ -208,6 +220,30 @@ def tui() -> None:
         click.echo(f"TUI module not available: {e}", err=True)
         click.echo("Install with: pip install aegispy[tui]", err=True)
         sys.exit(1)
+
+
+@main.command()
+def plugins() -> None:
+    """List all loaded plugins."""
+    if not _plugin_manager:
+        click.echo("Plugin manager not initialized", err=True)
+        sys.exit(1)
+    
+    plugins = _plugin_manager.list_plugins()
+    
+    if not plugins:
+        click.echo("No plugins loaded")
+        return
+    
+    click.echo(f"Loaded {len(plugins)} plugin(s):")
+    click.echo("-" * 60)
+    
+    for plugin in plugins:
+        click.echo(f"  {plugin['name']} v{plugin['version']}")
+        click.echo(f"    Author: {plugin['author']}")
+        click.echo(f"    Description: {plugin['description']}")
+        click.echo(f"    Status: {'Enabled' if plugin['enabled'] else 'Disabled'}")
+        click.echo()
 
 
 if __name__ == "__main__":
