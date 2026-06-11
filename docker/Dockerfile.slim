@@ -1,0 +1,34 @@
+# Build stage
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+COPY pyproject.toml .
+
+RUN pip install --no-cache-dir --user -e .
+
+# Production stage
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install only runtime dependencies
+COPY --from=builder /root/.local /root/.local
+
+# Add to PATH
+ENV PATH=/root/.local/bin:$PATH
+
+# Copy application code
+COPY aegispy ./aegispy
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create non-root user
+RUN useradd -m -u 1000 aegispy && \
+    chown -R aegispy:aegispy /app
+USER aegispy
+
+# Default command
+CMD ["aegispy", "--help"]
