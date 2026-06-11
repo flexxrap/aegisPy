@@ -8,9 +8,9 @@ from pathlib import Path
 
 import click
 
-from ..core.logging_config import setup_logging
-from ..sandbox import SecureSandbox, SandboxConfig
-from ..core.security import SecurityConfig
+from .core.logging_config import setup_logging
+from .sandbox import SecureSandbox, SandboxConfig
+from .core.security import SecurityConfig
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ def analyze(file: str, output: str | None) -> None:
     
     Performs static analysis to detect dangerous patterns and imports.
     """
-    from ..core.security import DangerousPatternDetector
+    from .core.security import DangerousPatternDetector
     
     try:
         code = Path(file).read_text()
@@ -187,7 +187,7 @@ def analyze(file: str, output: str | None) -> None:
 def tui() -> None:
     """Start interactive TUI mode."""
     try:
-        from ..ui.tui import main as tui_main
+        from .ui.tui import main as tui_main
         tui_main()
     except ImportError as e:
         click.echo(f"TUI module not available: {e}", err=True)

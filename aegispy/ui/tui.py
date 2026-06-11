@@ -15,8 +15,8 @@ from rich.live import Live
 from rich.layout import Layout
 from rich import box
 
-from ..sandbox import SecureSandbox, SandboxConfig
-from ..core.security import SecurityConfig, DangerousPatternDetector
+from .sandbox import SecureSandbox, SandboxConfig
+from .core.security import SecurityConfig, DangerousPatternDetector
 
 logger = logging.getLogger(__name__)
 
