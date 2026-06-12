@@ -170,7 +170,6 @@ class SecureSandbox:
                 preexec_fn=(
                     self._set_process_limits if sys.platform not in ("win32", "darwin") else None
                 ),
-                start_new_session=True,
             )
             self._pid = process.pid
             logger.info("Started sandbox process PID=%d", self._pid)

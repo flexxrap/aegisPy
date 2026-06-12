@@ -185,7 +185,6 @@ class ScriptRunner:
             env=env,
             cwd=str(self.working_directory),
             preexec_fn=set_child_limits if sys.platform not in ("win32", "darwin") else None,
-            start_new_session=True,
         )
         self._pid = process.pid
         logger.info("Started script process PID=%d: %s", self._pid, script_path)
