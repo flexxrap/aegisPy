@@ -42,11 +42,11 @@ jobs:
 
     - name: Type check with mypy
       run: |
-        mypy aegispy/
+        python -m mypy aegispy/
 
     - name: Test with pytest
       run: |
-        pytest aegispy/tests/ -v --tb=short --maxfail=3
+        python -m pytest aegispy/tests/ -v --tb=short --maxfail=3 -p no:forked
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
