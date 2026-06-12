@@ -44,9 +44,15 @@ jobs:
       run: |
         python -m mypy aegispy/
 
+    - name: Debug - check imports and collection
+      run: |
+        python -c "from aegispy.sandbox import SecureSandbox; print('sandbox OK')"
+        python -c "from aegispy.watcher import FileWatcher; print('watcher OK')"
+        python -c "from aegispy.cli import main; print('cli OK')"
+
     - name: Test with pytest
       run: |
-        python -m pytest aegispy/tests/ -v --tb=short --maxfail=3
+        python -m pytest aegispy/tests/ -v --tb=long --maxfail=3
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

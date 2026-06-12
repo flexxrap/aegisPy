@@ -136,23 +136,25 @@ class ScriptRunner:
             rlimit_fsize = getattr(resource, "RLIMIT_FSIZE", None)
             rlimit_nproc = getattr(resource, "RLIMIT_NPROC", None)
 
-            if rlimit_as is not None:
+            setrlimit = getattr(resource, "setrlimit", None)
+
+            if rlimit_as is not None and setrlimit is not None:
                 try:
                     max_memory_bytes = self.memory_limit_mb * 1024 * 1024
-                    resource.setrlimit(rlimit_as, (max_memory_bytes, max_memory_bytes))
+                    setrlimit(rlimit_as, (max_memory_bytes, max_memory_bytes))
                 except (OSError, ValueError) as e:
                     logger.warning("Could not set memory limit: %s", e)
 
-            if rlimit_fsize is not None:
+            if rlimit_fsize is not None and setrlimit is not None:
                 try:
                     max_file_size = 100 * 1024 * 1024
-                    resource.setrlimit(rlimit_fsize, (max_file_size, max_file_size))
+                    setrlimit(rlimit_fsize, (max_file_size, max_file_size))
                 except (OSError, ValueError):
                     pass
 
-            if rlimit_nproc is not None:
+            if rlimit_nproc is not None and setrlimit is not None:
                 with contextlib.suppress(OSError, ValueError):
-                    resource.setrlimit(rlimit_nproc, (64, 64))
+                    setrlimit(rlimit_nproc, (64, 64))
 
             with contextlib.suppress(OSError):
                 setpgrp = getattr(os, "setpgrp", None)

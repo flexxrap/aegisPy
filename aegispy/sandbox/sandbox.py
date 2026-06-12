@@ -222,26 +222,28 @@ class SecureSandbox:
         rlimit_nproc = getattr(resource, "RLIMIT_NPROC", None)
         rlimit_cpu = getattr(resource, "RLIMIT_CPU", None)
 
+        setrlimit = getattr(resource, "setrlimit", None)
+
         # Set memory limit
-        if rlimit_as is not None:
+        if rlimit_as is not None and setrlimit is not None:
             try:
                 max_memory_bytes = self.config.security_config.max_memory_mb * 1024 * 1024
-                resource.setrlimit(rlimit_as, (max_memory_bytes, max_memory_bytes))
+                setrlimit(rlimit_as, (max_memory_bytes, max_memory_bytes))
             except (OSError, ValueError):
                 pass
 
         # Set file size limit
-        if rlimit_fsize is not None:
+        if rlimit_fsize is not None and setrlimit is not None:
             try:
                 max_file_size = self.config.security_config.max_file_size_mb * 1024 * 1024
-                resource.setrlimit(rlimit_fsize, (max_file_size, max_file_size))
+                setrlimit(rlimit_fsize, (max_file_size, max_file_size))
             except (OSError, ValueError):
                 pass
 
         # Set max processes
-        if rlimit_nproc is not None:
+        if rlimit_nproc is not None and setrlimit is not None:
             with contextlib.suppress(OSError, ValueError):
-                resource.setrlimit(
+                setrlimit(
                     rlimit_nproc,
                     (
                         self.config.security_config.max_processes,
@@ -250,10 +252,10 @@ class SecureSandbox:
                 )
 
         # Set CPU time limit
-        if rlimit_cpu is not None:
+        if rlimit_cpu is not None and setrlimit is not None:
             try:
                 cpu_time = int(self.config.security_config.max_cpu_time * 1000000)
-                resource.setrlimit(rlimit_cpu, (cpu_time, cpu_time))
+                setrlimit(rlimit_cpu, (cpu_time, cpu_time))
             except (OSError, ValueError):
                 pass
 
