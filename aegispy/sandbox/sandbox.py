@@ -167,9 +167,9 @@ class SecureSandbox:
                 stderr=subprocess.PIPE,
                 env=env,
                 cwd=self.config.security_config.working_directory,
-                preexec_fn=self._set_process_limits
-                if sys.platform not in ("win32", "darwin")
-                else None,
+                preexec_fn=(
+                    self._set_process_limits if sys.platform not in ("win32", "darwin") else None
+                ),
                 start_new_session=True,
             )
             self._pid = process.pid
