@@ -144,8 +144,9 @@ class ScriptRunner:
                 resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
 
             with contextlib.suppress(OSError):
-                if hasattr(os, "setpgrp"):
-                    os.setpgrp()
+                setpgrp = getattr(os, "setpgrp", None)
+                if setpgrp is not None:
+                    setpgrp()
 
         # Try multiple ways to find python executable
         python_executable = sys.executable if os.path.isabs(sys.executable) else None

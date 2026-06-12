@@ -243,9 +243,10 @@ class SecureSandbox:
             pass
 
         # Set process group for isolation (Unix only)
-        if hasattr(os, "setpgrp"):
+        setpgrp = getattr(os, "setpgrp", None)
+        if setpgrp is not None:
             with contextlib.suppress(OSError):
-                os.setpgrp()
+                setpgrp()
 
     def _get_process_memory(self) -> float:
         """Get current process memory usage in MB.
