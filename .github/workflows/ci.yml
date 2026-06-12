@@ -46,7 +46,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        python -m pytest aegispy/tests/ -v --tb=short --maxfail=3 -p no:forked
+        python -m pytest aegispy/tests/ -v --tb=short --maxfail=3
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
