@@ -211,36 +211,45 @@ class SecureSandbox:
         except ImportError:
             return
 
+        rlimit_as = getattr(resource, "RLIMIT_AS", None)
+        rlimit_fsize = getattr(resource, "RLIMIT_FSIZE", None)
+        rlimit_nproc = getattr(resource, "RLIMIT_NPROC", None)
+        rlimit_cpu = getattr(resource, "RLIMIT_CPU", None)
+
         # Set memory limit
-        try:
-            max_memory_bytes = self.config.security_config.max_memory_mb * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
-        except (OSError, ValueError):
-            pass
+        if rlimit_as is not None:
+            try:
+                max_memory_bytes = self.config.security_config.max_memory_mb * 1024 * 1024
+                resource.setrlimit(rlimit_as, (max_memory_bytes, max_memory_bytes))
+            except (OSError, ValueError):
+                pass
 
         # Set file size limit
-        try:
-            max_file_size = self.config.security_config.max_file_size_mb * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_size, max_file_size))
-        except (OSError, ValueError):
-            pass
+        if rlimit_fsize is not None:
+            try:
+                max_file_size = self.config.security_config.max_file_size_mb * 1024 * 1024
+                resource.setrlimit(rlimit_fsize, (max_file_size, max_file_size))
+            except (OSError, ValueError):
+                pass
 
         # Set max processes
-        with contextlib.suppress(OSError, ValueError):
-            resource.setrlimit(
-                resource.RLIMIT_NPROC,
-                (
-                    self.config.security_config.max_processes,
-                    self.config.security_config.max_processes,
-                ),
-            )
+        if rlimit_nproc is not None:
+            with contextlib.suppress(OSError, ValueError):
+                resource.setrlimit(
+                    rlimit_nproc,
+                    (
+                        self.config.security_config.max_processes,
+                        self.config.security_config.max_processes,
+                    ),
+                )
 
         # Set CPU time limit
-        try:
-            cpu_time = int(self.config.security_config.max_cpu_time * 1000000)
-            resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
-        except (OSError, ValueError):
-            pass
+        if rlimit_cpu is not None:
+            try:
+                cpu_time = int(self.config.security_config.max_cpu_time * 1000000)
+                resource.setrlimit(rlimit_cpu, (cpu_time, cpu_time))
+            except (OSError, ValueError):
+                pass
 
         # Set process group for isolation (Unix only)
         setpgrp = getattr(os, "setpgrp", None)
