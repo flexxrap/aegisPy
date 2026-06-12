@@ -10,7 +10,10 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import resource  # noqa: F401
 
 from ..core.logging_config import get_logger
 from ..core.security import DangerousPatternDetector, SecurityConfig
@@ -164,7 +167,10 @@ class SecureSandbox:
                 stderr=subprocess.PIPE,
                 env=env,
                 cwd=self.config.security_config.working_directory,
-                preexec_fn=self._set_process_limits if sys.platform != "win32" else None,
+                preexec_fn=self._set_process_limits
+                if sys.platform not in ("win32", "darwin")
+                else None,
+                start_new_session=True,
             )
             self._pid = process.pid
             logger.info("Started sandbox process PID=%d", self._pid)

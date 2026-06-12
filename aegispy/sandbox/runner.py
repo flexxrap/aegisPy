@@ -10,7 +10,10 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import resource  # noqa: F401
 
 from ..core.logging_config import get_logger
 
@@ -179,7 +182,8 @@ class ScriptRunner:
             stderr=subprocess.PIPE,
             env=env,
             cwd=str(self.working_directory),
-            preexec_fn=set_child_limits if sys.platform != "win32" else None,
+            preexec_fn=set_child_limits if sys.platform not in ("win32", "darwin") else None,
+            start_new_session=True,
         )
         self._pid = process.pid
         logger.info("Started script process PID=%d: %s", self._pid, script_path)
