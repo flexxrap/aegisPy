@@ -65,7 +65,7 @@ class TestFileWatcher:
 
             watcher.add_path(path)
 
-            assert path in watcher._paths
+            assert path.resolve() in watcher._paths
 
     def test_remove_path(self) -> None:
         """Test removing a path from watch."""
@@ -77,7 +77,7 @@ class TestFileWatcher:
             result = watcher.remove_path(path)
 
             assert result is True
-            assert path not in watcher._paths
+            assert path.resolve() not in watcher._paths
 
     def test_remove_nonexistent_path(self) -> None:
         """Test removing nonexistent path."""
