@@ -25,7 +25,8 @@ jobs:
         cache: 'pip'
         cache-dependency-path: 'pyproject.toml'
 
-    - name: Increase memory limit
+    - name: Increase memory limit (Unix)
+      if: runner.os != 'Windows'
       run: |
         ulimit -v unlimited
 
@@ -45,7 +46,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest aegispy/tests/ -v --tb=short --maxfail=3 --forked
+        pytest aegispy/tests/ -v --tb=short --maxfail=3
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -43,6 +45,9 @@ class TestScriptRunner:
         with pytest.raises(FileNotFoundError):
             runner.run("/nonexistent/script.sh")
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="Windows does not have Unix executable permissions"
+    )
     def test_run_script_not_executable(self, tmp_path: Path) -> None:
         """Test running non-executable script."""
         script_path = tmp_path / "test.sh"
@@ -58,17 +63,24 @@ class TestScriptRunner:
         script_path.write_text("import time; time.sleep(10)\n")
         script_path.chmod(0o755)
 
-        runner = ScriptRunner(timeout=0.1, memory_limit_mb=256)
+        runner = ScriptRunner(timeout=10.0, memory_limit_mb=256)
 
-        # Start script but kill quickly
         import threading
 
+        errors: list[Exception] = []
+
         def run_in_thread() -> None:
-            runner.run(script_path)
+            try:
+                runner.run(script_path)
+            except Exception as e:
+                errors.append(e)
 
         thread = threading.Thread(target=run_in_thread)
         thread.start()
-        thread.join(timeout=0.2)
+        time.sleep(0.2)
 
-        # Process should be killed
-        assert runner._pid is None or runner._pid is not None
+        killed = runner.kill()
+        thread.join(timeout=1.0)
+
+        assert killed
+        assert runner._pid is None

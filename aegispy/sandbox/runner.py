@@ -99,8 +99,8 @@ class ScriptRunner:
             logger.error("Script not found: %s", script_path)
             raise FileNotFoundError(f"Script not found: {script_path}")
 
-        # Check if script is executable
-        if not os.access(script_path, os.X_OK):
+        # Check if script is executable (Unix only)
+        if sys.platform != "win32" and not os.access(script_path, os.X_OK):
             logger.error("Script not executable: %s", script_path)
             raise PermissionError(f"Script not executable: {script_path}")
 
@@ -121,10 +121,13 @@ class ScriptRunner:
         Returns:
             RunResult with execution metrics
         """
-        import resource
 
         def set_child_limits() -> None:
             """Set resource limits in child process after fork."""
+            try:
+                import resource
+            except ImportError:
+                return
             try:
                 max_memory_bytes = self.memory_limit_mb * 1024 * 1024
                 resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
@@ -141,7 +144,8 @@ class ScriptRunner:
                 resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
 
             with contextlib.suppress(OSError):
-                os.setpgrp()
+                if hasattr(os, "setpgrp"):
+                    os.setpgrp()
 
         # Try multiple ways to find python executable
         python_executable = sys.executable if os.path.isabs(sys.executable) else None
@@ -166,7 +170,7 @@ class ScriptRunner:
             stderr=subprocess.PIPE,
             env=env,
             cwd=str(self.working_directory),
-            preexec_fn=set_child_limits,
+            preexec_fn=set_child_limits if sys.platform != "win32" else None,
         )
         self._pid = process.pid
         logger.info("Started script process PID=%d: %s", self._pid, script_path)

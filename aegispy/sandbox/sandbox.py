@@ -164,7 +164,7 @@ class SecureSandbox:
                 stderr=subprocess.PIPE,
                 env=env,
                 cwd=self.config.security_config.working_directory,
-                preexec_fn=self._set_process_limits,
+                preexec_fn=self._set_process_limits if sys.platform != "win32" else None,
             )
             self._pid = process.pid
             logger.info("Started sandbox process PID=%d", self._pid)
@@ -206,7 +206,10 @@ class SecureSandbox:
 
     def _set_process_limits(self) -> None:
         """Set process resource limits in child process."""
-        import resource
+        try:
+            import resource
+        except ImportError:
+            return
 
         # Set memory limit
         try:
@@ -239,9 +242,10 @@ class SecureSandbox:
         except (OSError, ValueError):
             pass
 
-        # Set process group for isolation
-        with contextlib.suppress(OSError):
-            os.setpgrp()
+        # Set process group for isolation (Unix only)
+        if hasattr(os, "setpgrp"):
+            with contextlib.suppress(OSError):
+                os.setpgrp()
 
     def _get_process_memory(self) -> float:
         """Get current process memory usage in MB.
