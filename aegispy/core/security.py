@@ -178,11 +178,12 @@ class DangerousPatternDetector:
                     for alias in node.names:
                         if any(alias.name.startswith(mod) for mod in self.DANGEROUS_IMPORTS):
                             imports_found.append(alias.name)
-                elif isinstance(node, ast.ImportFrom):
-                    if node.module and any(
-                        node.module.startswith(mod) for mod in self.DANGEROUS_IMPORTS
-                    ):
-                        imports_found.append(node.module)
+                elif (
+                    isinstance(node, ast.ImportFrom)
+                    and node.module
+                    and any(node.module.startswith(mod) for mod in self.DANGEROUS_IMPORTS)
+                ):
+                    imports_found.append(node.module)
         except SyntaxError as e:
             logger.warning("Syntax error while checking imports: %s", e)
 
@@ -211,9 +212,11 @@ class DangerousPatternDetector:
                     if isinstance(node.func, ast.Name):
                         if node.func.id in self.DANGEROUS_FUNCTIONS:
                             functions_found.append(node.func.id)
-                    elif isinstance(node.func, ast.Attribute):
-                        if node.func.attr in self.DANGEROUS_FUNCTIONS:
-                            functions_found.append(node.func.attr)
+                    elif (
+                        isinstance(node.func, ast.Attribute)
+                        and node.func.attr in self.DANGEROUS_FUNCTIONS
+                    ):
+                        functions_found.append(node.func.attr)
         except SyntaxError as e:
             logger.warning("Syntax error while checking functions: %s", e)
 

@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .generator import ReportGenerator, ReportFormat, ReportData
+from .generator import ReportData, ReportFormat, ReportGenerator
 
 __all__ = ["ReportGenerator", "ReportFormat", "ReportData"]

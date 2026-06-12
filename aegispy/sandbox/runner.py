@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -98,6 +99,7 @@ class ScriptRunner:
             logger.error("Script not found: %s", script_path)
             raise FileNotFoundError(f"Script not found: {script_path}")
 
+        # Check if script is executable
         if not os.access(script_path, os.X_OK):
             logger.error("Script not executable: %s", script_path)
             raise PermissionError(f"Script not executable: {script_path}")
@@ -107,15 +109,7 @@ class ScriptRunner:
         env = os.environ.copy()
         env.update(self.environment)
 
-        try:
-            return self._run_script(script_path, env)
-        except Exception as e:
-            logger.error("Script execution failed: %s", e)
-            return RunResult(
-                exit_code=-1,
-                stderr=f"Execution error: {str(e)}",
-                execution_time=time.time() - self._start_time,
-            )
+        return self._run_script(script_path, env)
 
     def _run_script(self, script_path: Path, env: dict[str, str]) -> RunResult:
         """Run the script with resource limits.
@@ -129,88 +123,79 @@ class ScriptRunner:
         """
         import resource
 
-        old_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
-        max_memory_bytes = self.memory_limit_mb * 1024 * 1024
-
-        try:
-            resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
-        except (OSError, ValueError) as e:
-            logger.warning("Could not set memory limit: %s", e)
-
-        try:
-            # Try multiple ways to find python executable
-            python_executable = sys.executable if os.path.isabs(sys.executable) else None
-            if not python_executable:
-                python_executable = shutil.which("python3") or shutil.which("python") or sys.executable
-            
-            process = subprocess.Popen(
-                [python_executable, str(script_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env=env,
-                cwd=str(self.working_directory),
-            )
-            self._pid = process.pid
-            logger.info("Started script process PID=%d: %s", self._pid, script_path)
+        def set_child_limits() -> None:
+            """Set resource limits in child process after fork."""
+            try:
+                max_memory_bytes = self.memory_limit_mb * 1024 * 1024
+                resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
+            except (OSError, ValueError) as e:
+                logger.warning("Could not set memory limit: %s", e)
 
             try:
-                stdout, stderr = process.communicate(timeout=self.timeout)
-                exit_code = process.returncode
-            except subprocess.TimeoutExpired:
-                logger.warning("Script timed out after %.1fs: %s", self.timeout, script_path)
-                process.kill()
-                stdout, stderr = process.communicate()
-                exit_code = -1
-                return RunResult(
-                    exit_code=exit_code,
-                    stdout=stdout.decode("utf-8", errors="replace"),
-                    stderr=stderr.decode("utf-8", errors="replace"),
-                    execution_time=time.time() - self._start_time,
-                    is_timeout=True,
-                )
+                max_file_size = 100 * 1024 * 1024
+                resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_size, max_file_size))
+            except (OSError, ValueError):
+                pass
 
-            memory_mb = self._get_process_memory()
+            with contextlib.suppress(OSError, ValueError):
+                resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
 
+            with contextlib.suppress(OSError):
+                os.setpgrp()
+
+        # Try multiple ways to find python executable
+        python_executable = sys.executable if os.path.isabs(sys.executable) else None
+        if not python_executable:
+            python_executable = shutil.which("python3") or shutil.which("python") or sys.executable
+
+        if not python_executable or not os.path.exists(python_executable):
+            logger.error("Python executable not found: %s", python_executable)
+            return RunResult(
+                exit_code=-1,
+                stderr=f"Python executable not found: {python_executable}",
+                execution_time=time.time() - self._start_time,
+            )
+
+        logger.info("Running script with python: %s", python_executable)
+        logger.info("Script path: %s", script_path)
+        logger.info("Working directory: %s", self.working_directory)
+
+        process = subprocess.Popen(
+            [python_executable, str(script_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            cwd=str(self.working_directory),
+            preexec_fn=set_child_limits,
+        )
+        self._pid = process.pid
+        logger.info("Started script process PID=%d: %s", self._pid, script_path)
+
+        try:
+            stdout, stderr = process.communicate(timeout=self.timeout)
+            exit_code = process.returncode
+        except subprocess.TimeoutExpired:
+            logger.warning("Script timed out after %.1fs: %s", self.timeout, script_path)
+            process.kill()
+            stdout, stderr = process.communicate()
+            exit_code = -1
             return RunResult(
                 exit_code=exit_code,
                 stdout=stdout.decode("utf-8", errors="replace"),
                 stderr=stderr.decode("utf-8", errors="replace"),
                 execution_time=time.time() - self._start_time,
-                memory_usage_mb=memory_mb,
+                is_timeout=True,
             )
 
-        except Exception as e:
-            logger.error("Process execution failed: %s", e)
-            return RunResult(
-                exit_code=-1,
-                stderr=f"Process error: {str(e)}",
-                execution_time=time.time() - self._start_time,
-            )
-        finally:
-            try:
-                resource.setrlimit(resource.RLIMIT_AS, old_mem_limit)
-            except (OSError, ValueError):
-                pass
+        memory_mb = self._get_process_memory()
 
-    def _set_process_limits(self) -> None:
-        """Set process resource limits."""
-        import resource
-
-        try:
-            max_file_size = 100 * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_size, max_file_size))
-        except (OSError, ValueError):
-            pass
-
-        try:
-            resource.setrlimit(resource.RLIMIT_NPROC, (64, 64))
-        except (OSError, ValueError):
-            pass
-
-        try:
-            os.setpgrp()
-        except OSError:
-            pass
+        return RunResult(
+            exit_code=exit_code,
+            stdout=stdout.decode("utf-8", errors="replace"),
+            stderr=stderr.decode("utf-8", errors="replace"),
+            execution_time=time.time() - self._start_time,
+            memory_usage_mb=memory_mb,
+        )
 
     def _get_process_memory(self) -> float:
         """Get current process memory usage in MB.

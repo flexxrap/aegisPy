@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .watcher import FileWatcher, WatchEvent, WatcherConfig, WatchEventType
+from .watcher import FileWatcher, WatcherConfig, WatchEvent, WatchEventType
 
 __all__ = ["FileWatcher", "WatchEvent", "WatcherConfig", "WatchEventType"]

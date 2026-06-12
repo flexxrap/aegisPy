@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -135,10 +136,8 @@ class SecureSandbox:
         try:
             return self._execute_script(script_path, timeout or self.config.timeout)
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 Path(script_path).unlink()
-            except OSError:
-                pass
 
     def _execute_script(self, script_path: str, timeout: float) -> ExecutionResult:
         """Execute a Python script in sandbox.
@@ -156,16 +155,6 @@ class SecureSandbox:
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
         env.update(self.config.environment)
-
-        # Limit memory using ulimit
-        import resource
-
-        old_mem_limit = resource.getrlimit(resource.RLIMIT_AS)
-        max_memory_bytes = self.config.security_config.max_memory_mb * 1024 * 1024
-        try:
-            resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
-        except (OSError, ValueError) as e:
-            logger.warning("Could not set memory limit: %s", e)
 
         # Execute script
         try:
@@ -214,25 +203,27 @@ class SecureSandbox:
                 stderr=f"Execution error: {str(e)}",
                 execution_time=time.time() - self._start_time,
             )
-        finally:
-            try:
-                resource.setrlimit(resource.RLIMIT_AS, old_mem_limit)
-            except (OSError, ValueError):
-                pass
 
     def _set_process_limits(self) -> None:
-        """Set process resource limits."""
-        # Set file size limit
+        """Set process resource limits in child process."""
         import resource
 
-        max_file_size = self.config.security_config.max_file_size_mb * 1024 * 1024
+        # Set memory limit
         try:
+            max_memory_bytes = self.config.security_config.max_memory_mb * 1024 * 1024
+            resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
+        except (OSError, ValueError):
+            pass
+
+        # Set file size limit
+        try:
+            max_file_size = self.config.security_config.max_file_size_mb * 1024 * 1024
             resource.setrlimit(resource.RLIMIT_FSIZE, (max_file_size, max_file_size))
         except (OSError, ValueError):
             pass
 
         # Set max processes
-        try:
+        with contextlib.suppress(OSError, ValueError):
             resource.setrlimit(
                 resource.RLIMIT_NPROC,
                 (
@@ -240,8 +231,6 @@ class SecureSandbox:
                     self.config.security_config.max_processes,
                 ),
             )
-        except (OSError, ValueError):
-            pass
 
         # Set CPU time limit
         try:
@@ -250,11 +239,9 @@ class SecureSandbox:
         except (OSError, ValueError):
             pass
 
-        # Set no new processes
-        try:
+        # Set process group for isolation
+        with contextlib.suppress(OSError):
             os.setpgrp()
-        except OSError:
-            pass
 
     def _get_process_memory(self) -> float:
         """Get current process memory usage in MB.

@@ -8,13 +8,13 @@ from pathlib import Path
 
 import click
 
+from .cli_report import report as report_command
+from .cli_watch import watch as watch_command
 from .config import Config, ConfigLoader
 from .core.logging_config import setup_logging
 from .core.security import SecurityConfig
 from .plugins import PluginManager
 from .sandbox import SandboxConfig, SecureSandbox
-from .cli_watch import watch as watch_command
-from .cli_report import report as report_command
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,13 @@ _plugin_manager: PluginManager | None = None
 @click.option("--config", "-c", type=click.Path(), help="Path to configuration file")
 @click.option("--plugins-dir", "-p", type=click.Path(), help="Directory containing plugins")
 @click.pass_context
-def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | None, plugins_dir: str | None) -> None:
+def main(
+    ctx: click.Context,
+    verbose: int,
+    log_file: str | None,
+    config: str | None,
+    plugins_dir: str | None,
+) -> None:
     """AegisPy - Secure code sandbox with TUI."""
     global _ctx_config, _plugin_manager
 
@@ -56,7 +62,7 @@ def main(ctx: click.Context, verbose: int, log_file: str | None, config: str | N
     _plugin_manager = PluginManager()
     if plugins_dir:
         _plugin_manager.registry.add_load_path(Path(plugins_dir))
-    
+
     # Load plugins
     loaded = _plugin_manager.load_plugins()
     logger.info("Loaded %d plugins", loaded)
@@ -107,6 +113,8 @@ def run(
         except OSError as e:
             click.echo(f"Error reading file: {e}", err=True)
             sys.exit(1)
+
+    assert code is not None
 
     try:
         # Use config values or command line overrides
@@ -230,16 +238,16 @@ def plugins() -> None:
     if not _plugin_manager:
         click.echo("Plugin manager not initialized", err=True)
         sys.exit(1)
-    
+
     plugins = _plugin_manager.list_plugins()
-    
+
     if not plugins:
         click.echo("No plugins loaded")
         return
-    
+
     click.echo(f"Loaded {len(plugins)} plugin(s):")
     click.echo("-" * 60)
-    
+
     for plugin in plugins:
         click.echo(f"  {plugin['name']} v{plugin['version']}")
         click.echo(f"    Author: {plugin['author']}")
